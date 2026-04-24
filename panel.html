@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Quick Paste Panel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: rgba(40, 44, 52, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+    }
+    .container {
+      width: 100%; height: 100%;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      cursor: move;
+      padding: 4px 0;
+    }
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .header-actions { display: flex; gap: 8px; }
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: none;
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-icon:hover { background: rgba(255, 255, 255, 0.2); }
+    .btn-close { font-size: 18px; }
+    .btn-close:hover { background: rgba(244, 67, 54, 0.3); }
+    .btn-quit { 
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .btn-quit:hover { 
+      background: rgba(244, 67, 54, 0.2);
+      color: #ff6b6b;
+    }
+    .search-box { position: relative; margin-bottom: 12px; }
+    .search-input {
+      width: 100%;
+      padding: 10px 12px 10px 36px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 13px;
+      color: #fff;
+      outline: none;
+    }
+    .search-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+    .search-input:focus {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(102, 126, 234, 0.5);
+    }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    .snippet-list { flex: 1; overflow-y: auto; }
+    .snippet-list::-webkit-scrollbar { width: 4px; }
+    .snippet-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .snippet-item {
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      border: 1px solid transparent;
+    }
+    .snippet-item:hover {
+      background: rgba(102, 126, 234, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
+      transform: translateX(4px);
+    }
+    .snippet-content {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.5;
+      word-break: break-all;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      padding-right: 50px;
+    }
+    .snippet-actions {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+      gap: 4px;
+    }
+    .snippet-item:hover .snippet-actions { display: flex; }
+    .btn-action {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-action.edit:hover { background: rgba(255, 193, 7, 0.3); }
+    .btn-action.delete:hover { background: rgba(244, 67, 54, 0.3); }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: rgba(50, 54, 62, 0.98);
+      padding: 20px;
+      border-radius: 14px;
+      width: 260px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .modal-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .modal-textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-size: 13px;
+      color: #fff;
+      outline: none;
+      background: rgba(255, 255, 255, 0.05);
+      resize: none;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+    .modal-textarea::placeholder { color: rgba(255, 255, 255, 0.3); }
+    .modal-textarea:focus {
+      border-color: rgba(102, 126, 234, 0.6);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-modal {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-modal.cancel {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .btn-modal.cancel:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-modal.confirm {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-modal.confirm:hover { opacity: 0.9; }
+    .btn-modal.danger {
+      background: rgba(244, 67, 54, 0.8);
+      color: white;
+    }
+    .btn-modal.danger:hover { background: rgba(244, 67, 54, 1); }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(102, 126, 234, 0.95);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+      z-index: 2000;
+    }
+    .toast.show { display: block; animation: slideUp 1.5s ease; }
+    @keyframes slideUp {
+      0%, 100% { opacity: 0; transform: translate(-50%, 10px); }
+      20%, 80% { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="panel-header" id="panelHeader">
+      <span class="panel-title">快捷粘贴</span>
+      <div class="header-actions">
+        <button class="btn-icon" id="btnAdd" title="添加">+</button>
+        <button class="btn-icon btn-quit" id="btnQuit" title="退出应用">⏻</button>
+        <button class="btn-icon btn-close" id="btnClose" title="关闭面板">×</button>
+      </div>
+    </div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索内容...">
+    </div>
+    <div class="snippet-list" id="snippetList"></div>
+  </div>
+
+  <!-- 编辑/添加弹窗 -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">添加内容</div>
+      <textarea class="modal-textarea" id="inputContent" placeholder="输入要保存的内容..." rows="5"></textarea>
+      <div class="modal-actions">
+        <button class="btn-modal cancel" id="btnCancel">取消</button>
+        <button class="btn-modal confirm" id="btnConfirm">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退出确认弹窗 -->
+  <div class="modal-overlay" id="quitModal">
+    <div class="modal">
+      <div class="modal-title">退出应用</div>
+      <div class="modal-text">确定要退出快捷粘贴应用吗？</div>
+      <div class="modal-actions">
+        <button class="btn-modal cancel" id="btnQuitCancel">取消</button>
+        <button class="btn-modal danger" id="btnQuitConfirm">退出</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">已复制到剪贴板</div>
+
+  <script>
+    let snippets = [];
+    let filteredSnippets = [];
+    let editingId = null;
+
+    const panelHeader = document.getElementById('panelHeader');
+    const snippetList = document.getElementById('snippetList');
+    const searchInput = document.getElementById('searchInput');
+    const btnAdd = document.getElementById('btnAdd');
+    const btnClose = document.getElementById('btnClose');
+    const btnQuit = document.getElementById('btnQuit');
+    
+    const editModal = document.getElementById('editModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const inputContent = document.getElementById('inputContent');
+    const btnConfirm = document.getElementById('btnConfirm');
+    const btnCancel = document.getElementById('btnCancel');
+    
+    const quitModal = document.getElementById('quitModal');
+    const btnQuitConfirm = document.getElementById('btnQuitConfirm');
+    const btnQuitCancel = document.getElementById('btnQuitCancel');
+    
+    const toast = document.getElementById('toast');
+
+    async function init() {
+      snippets = await window.electronAPI.getSnippets();
+      filteredSnippets = [...snippets];
+      renderSnippets();
+      setupEvents();
+    }
+
+    function renderSnippets() {
+      if (filteredSnippets.length === 0) {
+        snippetList.innerHTML = searchInput.value.trim() 
+          ? `<div class="empty-state"><div>未找到匹配内容</div></div>`
+          : `<div class="empty-state"><div>暂无快捷文本</div><div style="margin-top:4px;font-size:12px">点击 + 添加</div></div>`;
+        return;
+      }
+
+      snippetList.innerHTML = filteredSnippets.map(item => `
+        <div class="snippet-item" data-id="${item.id}">
+          <div class="snippet-content">${escapeHtml(item.content)}</div>
+          <div class="snippet-actions">
+            <button class="btn-action edit" data-action="edit" data-id="${item.id}">✎</button>
+            <button class="btn-action delete" data-action="delete" data-id="${item.id}">✕</button>
+          </div>
+        </div>
+      `).join('');
+
+      snippetList.querySelectorAll('.snippet-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          const action = e.target.dataset.action;
+          const id = parseInt(e.target.dataset.id || item.dataset.id);
+          
+          if (action === 'edit') {
+            e.stopPropagation();
+            openEditModal(id);
+          } else if (action === 'delete') {
+            e.stopPropagation();
+            await deleteSnippet(id);
+          } else {
+            const snippet = snippets.find(s => s.id === id);
+            if (snippet) {
+              await window.electronAPI.copyToClipboard(snippet.content);
+              showToast('已复制到剪贴板');
+            }
+          }
+        });
+      });
+    }
+
+    function setupEvents() {
+      // 面板拖拽
+      let isDragging = false;
+      let dragStartX = 0, dragStartY = 0;
+
+      panelHeader.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || e.target.tagName === 'BUTTON') return;
+        isDragging = true;
+        dragStartX = e.screenX;
+        dragStartY = e.screenY;
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.screenX - dragStartX;
+        const deltaY = e.screenY - dragStartY;
+        window.electronAPI.dragPanel({ deltaX, deltaY });
+        dragStartX = e.screenX;
+        dragStartY = e.screenY;
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+
+      btnAdd.addEventListener('click', openAddModal);
+      btnClose.addEventListener('click', () => window.electronAPI.closePanel());
+      
+      // 退出应用
+      btnQuit.addEventListener('click', () => {
+        quitModal.classList.add('show');
+      });
+      
+      btnQuitConfirm.addEventListener('click', () => {
+        window.electronAPI.quitApp();
+      });
+      
+      btnQuitCancel.addEventListener('click', () => {
+        quitModal.classList.remove('show');
+      });
+      
+      // 编辑弹窗
+      btnConfirm.addEventListener('click', saveSnippet);
+      btnCancel.addEventListener('click', closeEditModal);
+      searchInput.addEventListener('input', (e) => filterSnippets(e.target.value));
+      
+      inputContent.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          saveSnippet();
+        }
+      });
+      
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (quitModal.classList.contains('show')) {
+            quitModal.classList.remove('show');
+          } else if (editModal.classList.contains('show')) {
+            closeEditModal();
+          } else {
+            window.electronAPI.closePanel();
+          }
+        }
+      });
+      
+      editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) closeEditModal();
+      });
+      
+      quitModal.addEventListener('click', (e) => {
+        if (e.target === quitModal) quitModal.classList.remove('show');
+      });
+    }
+
+    function filterSnippets(keyword) {
+      const query = keyword.trim().toLowerCase();
+      filteredSnippets = query ? snippets.filter(s => s.content.toLowerCase().includes(query)) : [...snippets];
+      renderSnippets();
+    }
+
+    function openAddModal() {
+      editingId = null;
+      modalTitle.textContent = '添加内容';
+      inputContent.value = '';
+      editModal.classList.add('show');
+      inputContent.focus();
+    }
+
+    function openEditModal(id) {
+      const snippet = snippets.find(s => s.id === id);
+      if (!snippet) return;
+      editingId = id;
+      modalTitle.textContent = '编辑内容';
+      inputContent.value = snippet.content;
+      editModal.classList.add('show');
+      inputContent.focus();
+    }
+
+    function closeEditModal() {
+      editModal.classList.remove('show');
+      editingId = null;
+    }
+
+    async function saveSnippet() {
+      const content = inputContent.value.trim();
+      if (!content) { showToast('内容不能为空'); return; }
+      snippets = editingId 
+        ? await window.electronAPI.updateSnippet({ id: editingId, content })
+        : await window.electronAPI.addSnippet({ content });
+      filterSnippets(searchInput.value);
+      closeEditModal();
+      showToast(editingId ? '已更新' : '已添加');
+    }
+
+    async function deleteSnippet(id) {
+      snippets = await window.electronAPI.deleteSnippet(id);
+      filterSnippets(searchInput.value);
+      showToast('已删除');
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1500);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    init();
+  </script>
+</body>
+</html>

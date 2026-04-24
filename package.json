@@ -1,0 +1,24 @@
+{
+  "name": "electron-quick-paste",
+  "version": "1.0.0",
+  "description": "快捷粘贴工具",
+  "main": "dist/main.min.js",
+  "scripts": {
+    "start": "node build.js && electron --disable-gpu --disable-software-rasterizer .",
+    "build": "node build.js",
+    "pack": "electron-builder",
+    "pack:mac": "electron-builder --mac",
+    "pack:win": "electron-builder --win",
+    "release": "node build.js && electron-builder"
+  },
+  "author": "zzc",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.9.1",
+    "esbuild": "^0.19.12"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  }
+}

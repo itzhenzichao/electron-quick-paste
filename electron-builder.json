@@ -1,0 +1,64 @@
+{
+  "appId": "com.quickpaste.app",
+  "productName": "粘亿驼",
+  "directories": {
+    "output": "release"
+  },
+  "compression": "maximum",
+  "files": [
+    "dist/main.min.js",
+    "dist/preload.min.js",
+    "dist/ball.html",
+    "dist/panel.html",
+    "dist/build/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "dist/main.min.js"
+  },
+  "asar": true,
+  "asarUnpack": [],
+  "win": {
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.ico"
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.icns",
+    "category": "public.app-category.productivity",
+    "extendInfo": {
+      "LSUIElement": 1
+    }
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": false,
+    "createStartMenuShortcut": false
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-${arch}.exe"
+  },
+  "dmg": {
+    "window": { "width": 256, "height": 256 },
+    "iconSize": 64,
+    "contents": [
+      { "x": 65, "y": 128 },
+      { "x": 190, "y": 128, "type": "link", "path": "/Applications" }
+    ]
+  }
+}
