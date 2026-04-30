@@ -80,7 +80,10 @@ function createBallWindow() {
     }
   });
   
-  startJumpInterval();
+  // ✅ 跳跃动画仅在 macOS 上启用
+  if (process.platform === 'darwin') {
+    startJumpInterval();
+  }
 }
 
 function doWindowJump() {
@@ -148,8 +151,10 @@ function doWindowJump() {
 }
 
 function startJumpInterval() {
+  // ✅ 跳跃动画仅在 macOS 上启用
+  if (process.platform !== 'darwin') return;
   if (jumpInterval) clearInterval(jumpInterval);
-  // jumpInterval = setInterval(doWindowJump, 5000);
+  jumpInterval = setInterval(doWindowJump, 5000);
 }
 
 function stopJumpInterval() {

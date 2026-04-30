@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteSnippet: (id) => ipcRenderer.invoke('delete-snippet', id),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
   getScreenSize: () => ipcRenderer.invoke('get-screen-size'),
+  getPlatform: () => process.platform,
   isPanelVisible: () => ipcRenderer.invoke('is-panel-visible'),
   getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
   dragStart: () => ipcRenderer.send('drag-start'),

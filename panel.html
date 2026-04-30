@@ -298,8 +298,8 @@
     const toast = document.getElementById('toast');
 
     async function init() {
-      // ✅ 根据平台设置退出按钮图标：Mac 使用 ⏻，Windows 使用 🔌
-      const isMac = navigator.platform.toLowerCase().includes('mac');
+      // ✅ 根据平台设置退出按钮图标：Mac 使用 ⏻，Windows 使用 🔌（与主进程使用一致的 process.platform 判断）
+      const isMac = window.electronAPI.getPlatform() === 'darwin';
       btnQuit.textContent = isMac ? '⏻' : '🔌';
       
       snippets = await window.electronAPI.getSnippets();
