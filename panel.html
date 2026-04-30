@@ -9,15 +9,15 @@
       width: 100%; height: 100%;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-      background: rgba(40, 44, 52, 0.95);
-      backdrop-filter: blur(20px);
+      background: #2C2E36;
       border-radius: 16px;
     }
     .container {
-      width: 100%; height: 100%;
+      width: 340px; height: 100%;
       padding: 16px;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
     .panel-header {
       display: flex;
@@ -298,6 +298,10 @@
     const toast = document.getElementById('toast');
 
     async function init() {
+      // ✅ 根据平台设置退出按钮图标：Mac 使用 ⏻，Windows 使用 🔌
+      const isMac = navigator.platform.toLowerCase().includes('mac');
+      btnQuit.textContent = isMac ? '⏻' : '🔌';
+      
       snippets = await window.electronAPI.getSnippets();
       filteredSnippets = [...snippets];
       renderSnippets();
@@ -354,6 +358,8 @@
         isDragging = true;
         dragStartX = e.screenX;
         dragStartY = e.screenY;
+        // ✅ 通知主进程记录窗口位置作为增量基准，避免 getPosition() 异步滞后漂移
+        window.electronAPI.dragPanelStart();
       });
 
       document.addEventListener('mousemove', (e) => {

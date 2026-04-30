@@ -13,12 +13,10 @@ const store = new Store({
   }
 });
 
-// ✅ 获取基础路径（兼容开发和打包环境）
 function getBasePath() {
   return __dirname;
 }
 
-// ✅ 获取图标路径
 function getIconPath() {
   const basePath = getBasePath();
   if (process.platform === 'win32') {
@@ -32,18 +30,29 @@ let panelWindow = null;
 let jumpInterval = null;
 let isJumping = false;
 
+// ✅ 拖拽时主进程自己维护窗口位置，避免 getPosition() 异步滞后的漂移问题
+let dragPosX = 0;
+let dragPosY = 0;
+let dragPanelX = 0;
+let dragPanelY = 0;
+let dragPanelW = 0;
+let dragPanelH = 0;
+
+const BALL_SIZE = 54;
+
 function createBallWindow() {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const display = screen.getPrimaryDisplay();
+  const { width, height } = display.workAreaSize;
   const savedPos = store.get('ballPosition');
-  const defaultX = savedPos.x || width - 80;
-  const defaultY = savedPos.y || 100;
+  const defaultX = savedPos.x !== null ? savedPos.x : width - 80;
+  const defaultY = savedPos.y !== null ? savedPos.y : 100;
 
   const basePath = getBasePath();
   const iconPath = getIconPath();
   
   ballWindow = new BrowserWindow({
-    width: 54,
-    height: 54,
+    width: BALL_SIZE,
+    height: BALL_SIZE,
     x: defaultX,
     y: defaultY,
     frame: false,
@@ -57,13 +66,10 @@ function createBallWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      // ✅ 修复：打包后使用 preload.min.js
-      preload: path.join(basePath, 'preload.min.js'),
-      transparent: true
+      preload: path.join(basePath, 'preload.min.js')
     }
   });
 
-  // ✅ 修复：使用完整路径
   ballWindow.loadFile(path.join(basePath, 'ball.html'));
   
   ballWindow.on('closed', () => {
@@ -77,32 +83,34 @@ function createBallWindow() {
   startJumpInterval();
 }
 
-// 窗口跳跃动画
 function doWindowJump() {
   if (!ballWindow || ballWindow.isDestroyed() || isJumping) return;
-  
+
   isJumping = true;
   const [startX, startY] = ballWindow.getPosition();
+  const jumpStartX = startX;
+  const jumpStartY = startY;
+
   const jumpHeight = 25;
   const duration = 600;
   const fps = 60;
-  const frames = Math.floor(duration / 1000 * fps);
+  const totalFrames = Math.floor(duration / 1000 * fps);
   let frame = 0;
-  
+
   function animate() {
     if (!ballWindow || ballWindow.isDestroyed()) {
       isJumping = false;
       return;
     }
-    
+
     frame++;
-    const progress = frame / frames;
+    const progress = frame / totalFrames;
     const t = progress;
     const offsetY = -4 * t * (t - 1) * jumpHeight;
-    
+
     let scaleX = 1;
     let scaleY = 1;
-    
+
     if (progress < 0.3) {
       scaleY = 1 + progress * 0.3;
       scaleX = 1 - progress * 0.1;
@@ -118,25 +126,30 @@ function doWindowJump() {
       scaleY = 0.85 + recoverProgress * 0.15;
       scaleX = 1.06 - recoverProgress * 0.06;
     }
-    
+
     ballWindow.webContents.send('jump-scale', { scaleX, scaleY });
-    ballWindow.setPosition(startX, Math.round(Math.max(0, startY - offsetY)));
-    
-    if (frame < frames) {
+    const newY = Math.round(jumpStartY - offsetY);
+    ballWindow.setPosition(jumpStartX, newY);
+
+    if (frame < totalFrames) {
       setTimeout(animate, 1000 / fps);
     } else {
-      ballWindow.setPosition(startX, startY);
+      ballWindow.setPosition(jumpStartX, jumpStartY);
       ballWindow.webContents.send('jump-scale', { scaleX: 1, scaleY: 1 });
       isJumping = false;
+      // 跳跃结束后同步 dragPos，防止与真实窗口位置产生漂移
+      const [realX, realY] = ballWindow.getPosition();
+      dragPosX = realX;
+      dragPosY = realY;
     }
   }
-  
+
   animate();
 }
 
 function startJumpInterval() {
   if (jumpInterval) clearInterval(jumpInterval);
-  jumpInterval = setInterval(doWindowJump, 5000);
+  // jumpInterval = setInterval(doWindowJump, 5000);
 }
 
 function stopJumpInterval() {
@@ -149,19 +162,27 @@ function stopJumpInterval() {
 function createPanelWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const [ballX, ballY] = ballWindow.getPosition();
-  
+
   const panelWidth = 340;
   const panelHeight = 480;
-  
-  let panelX = ballX + 60;
-  let panelY = ballY - 50;
-  
-  if (panelX + panelWidth > width) {
-    panelX = ballX - panelWidth - 10;
-  }
-  
-  panelX = Math.max(0, Math.min(panelX, width - panelWidth));
+  const gap = 8;
+
+  // 垂直：面板上边缘与球上边缘对齐，再限制不超出屏幕
+  let panelY = ballY;
   panelY = Math.max(0, Math.min(panelY, height - panelHeight));
+
+  // 水平：优先右侧，其次左侧，都不够时选空间更大的一侧
+  let panelX;
+  if (ballX + BALL_SIZE + gap + panelWidth <= width) {
+    panelX = ballX + BALL_SIZE + gap;
+  } else if (ballX - gap - panelWidth >= 0) {
+    panelX = ballX - gap - panelWidth;
+  } else {
+    // 两侧都不够单独显示，选剩余空间更大的一侧紧贴屏幕边缘
+    const rightSpace = width - (ballX + BALL_SIZE);
+    const leftSpace = ballX;
+    panelX = rightSpace > leftSpace ? width - panelWidth : 0;
+  }
 
   const basePath = getBasePath();
 
@@ -171,21 +192,19 @@ function createPanelWindow() {
     x: panelX,
     y: panelY,
     frame: false,
-    transparent: true,
+    transparent: false,
     alwaysOnTop: true,
     resizable: false,
     skipTaskbar: true,
-    hasShadow: false,
-    backgroundColor: '#00000000',
+    hasShadow: true,
+    backgroundColor: '#2C2E36',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      // ✅ 修复
       preload: path.join(basePath, 'preload.min.js')
     }
   });
 
-  // ✅ 修复
   panelWindow.loadFile(path.join(basePath, 'panel.html'));
   
   panelWindow.on('closed', () => {
@@ -255,34 +274,80 @@ ipcMain.handle('is-panel-visible', () => {
   return panelWindow !== null && !panelWindow.isDestroyed();
 });
 
-ipcMain.on('drag-ball', (event, { deltaX, deltaY }) => {
+// ✅ 新增：获取窗口位置
+ipcMain.handle('get-window-position', () => {
   if (ballWindow) {
     const [x, y] = ballWindow.getPosition();
-    const [w, h] = ballWindow.getSize();
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    ballWindow.setPosition(
-      Math.max(0, Math.min(x + deltaX, width - w)),
-      Math.max(0, Math.min(y + deltaY, height - h))
-    );
+    return { x, y };
+  }
+  return { x: 0, y: 0 };
+});
+
+// ✅ 拖拽开始时记录窗口当前位置作为增量累加的基准
+ipcMain.on('drag-start', () => {
+  if (ballWindow) {
+    const [x, y] = ballWindow.getPosition();
+    dragPosX = x;
+    dragPosY = y;
   }
 });
 
+// ✅ 拖拽期间不限位置，可随意拖动到屏幕任何位置（含屏幕外）
+ipcMain.on('drag-ball', (event, { deltaX, deltaY }) => {
+  if (ballWindow) {
+    dragPosX += deltaX;
+    dragPosY += deltaY;
+    ballWindow.setPosition(Math.round(dragPosX), Math.round(dragPosY));
+  }
+});
+
+// ✅ 松手后用 getPosition() 获取真实窗口位置进行吸边，消除增量累加的漂移
 ipcMain.on('save-ball-position', () => {
   if (ballWindow) {
-    const [x, y] = ballWindow.getPosition();
-    store.set('ballPosition', { x, y });
+    const display = screen.getPrimaryDisplay();
+    const { width, height } = display.workAreaSize;
+
+    const [realX, realY] = ballWindow.getPosition();
+    const snappedX = Math.max(0, Math.min(realX, width - BALL_SIZE));
+    const snappedY = Math.max(0, Math.min(realY, height - BALL_SIZE));
+
+    if (snappedX !== realX || snappedY !== realY) {
+      ballWindow.setPosition(snappedX, snappedY);
+    }
+
+    // 用真实窗口位置同步 dragPos，消除累积漂移
+    const [finalX, finalY] = ballWindow.getPosition();
+    dragPosX = finalX;
+    dragPosY = finalY;
+
+    store.set('ballPosition', { x: dragPosX, y: dragPosY });
+  }
+});
+
+// ✅ 面板拖拽开始时记录窗口当前位置和尺寸，避免 getPosition() 异步滞后漂移及 DPI 缩放导致尺寸变化
+ipcMain.on('drag-panel-start', () => {
+  if (panelWindow) {
+    const [x, y] = panelWindow.getPosition();
+    const [w, h] = panelWindow.getSize();
+    dragPanelX = x;
+    dragPanelY = y;
+    dragPanelW = w;
+    dragPanelH = h;
   }
 });
 
 ipcMain.on('drag-panel', (event, { deltaX, deltaY }) => {
   if (panelWindow) {
-    const [x, y] = panelWindow.getPosition();
-    const [w, h] = panelWindow.getSize();
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    panelWindow.setPosition(
-      Math.max(0, Math.min(x + deltaX, width - w)),
-      Math.max(0, Math.min(y + deltaY, height - h))
-    );
+    dragPanelX += deltaX;
+    dragPanelY += deltaY;
+    // ✅ 使用 setBounds 显式指定宽高，防止 Windows DPI 缩放下 setPosition 导致窗口尺寸漂移变大
+    panelWindow.setBounds({
+      x: Math.max(0, Math.min(Math.round(dragPanelX), width - dragPanelW)),
+      y: Math.max(0, Math.min(Math.round(dragPanelY), height - dragPanelH)),
+      width: dragPanelW,
+      height: dragPanelH
+    });
   }
 });
 
