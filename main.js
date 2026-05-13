@@ -78,6 +78,9 @@ function createBallWindow() {
       clearInterval(jumpInterval);
       jumpInterval = null;
     }
+    if (panelWindow && !panelWindow.isDestroyed()) {
+      panelWindow.destroy();
+    }
   });
   
   // ✅ 跳跃动画仅在 macOS 上启用
@@ -166,6 +169,9 @@ function stopJumpInterval() {
 
 function getPanelPosition() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  if (!ballWindow || ballWindow.isDestroyed()) {
+    return { x: width - 340 - 20, y: 100, width: 340, height: 480 };
+  }
   const [ballX, ballY] = ballWindow.getPosition();
 
   const panelWidth = 340;
