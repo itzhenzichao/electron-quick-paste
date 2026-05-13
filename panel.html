@@ -306,6 +306,10 @@
       filteredSnippets = [...snippets];
       renderSnippets();
       setupEvents();
+      window.electronAPI.onRefreshSnippets(async () => {
+        snippets = await window.electronAPI.getSnippets();
+        filterSnippets(searchInput.value);
+      });
     }
 
     function renderSnippets() {
