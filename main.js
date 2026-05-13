@@ -164,7 +164,7 @@ function stopJumpInterval() {
   }
 }
 
-function createPanelWindow() {
+function getPanelPosition() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const [ballX, ballY] = ballWindow.getPosition();
 
@@ -172,30 +172,32 @@ function createPanelWindow() {
   const panelHeight = 480;
   const gap = 8;
 
-  // 垂直：面板上边缘与球上边缘对齐，再限制不超出屏幕
   let panelY = ballY;
   panelY = Math.max(0, Math.min(panelY, height - panelHeight));
 
-  // 水平：优先右侧，其次左侧，都不够时选空间更大的一侧
   let panelX;
   if (ballX + BALL_SIZE + gap + panelWidth <= width) {
     panelX = ballX + BALL_SIZE + gap;
   } else if (ballX - gap - panelWidth >= 0) {
     panelX = ballX - gap - panelWidth;
   } else {
-    // 两侧都不够单独显示，选剩余空间更大的一侧紧贴屏幕边缘
     const rightSpace = width - (ballX + BALL_SIZE);
     const leftSpace = ballX;
     panelX = rightSpace > leftSpace ? width - panelWidth : 0;
   }
 
+  return { x: panelX, y: panelY, width: panelWidth, height: panelHeight };
+}
+
+function createPanelWindow() {
+  const pos = getPanelPosition();
   const basePath = getBasePath();
 
   panelWindow = new BrowserWindow({
-    width: panelWidth,
-    height: panelHeight,
-    x: panelX,
-    y: panelY,
+    width: pos.width,
+    height: pos.height,
+    x: pos.x,
+    y: pos.y,
     frame: false,
     transparent: false,
     alwaysOnTop: true,
@@ -211,7 +213,7 @@ function createPanelWindow() {
   });
 
   panelWindow.loadFile(path.join(basePath, 'panel.html'));
-  
+
   panelWindow.on('closed', () => {
     panelWindow = null;
   });
@@ -273,10 +275,6 @@ ipcMain.handle('copy-to-clipboard', (event, text) => {
 ipcMain.handle('get-screen-size', () => {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   return { width, height };
-});
-
-ipcMain.handle('is-panel-visible', () => {
-  return panelWindow !== null && !panelWindow.isDestroyed();
 });
 
 // ✅ 新增：获取窗口位置
@@ -358,8 +356,14 @@ ipcMain.on('drag-panel', (event, { deltaX, deltaY }) => {
 
 ipcMain.on('toggle-panel', () => {
   if (panelWindow && !panelWindow.isDestroyed()) {
-    panelWindow.close();
-    panelWindow = null;
+    if (panelWindow.isVisible()) {
+      panelWindow.hide();
+    } else {
+      const pos = getPanelPosition();
+      panelWindow.setPosition(pos.x, pos.y);
+      panelWindow.show();
+      panelWindow.webContents.send('refresh-snippets');
+    }
   } else {
     createPanelWindow();
   }
@@ -367,8 +371,7 @@ ipcMain.on('toggle-panel', () => {
 
 ipcMain.on('close-panel', () => {
   if (panelWindow && !panelWindow.isDestroyed()) {
-    panelWindow.close();
-    panelWindow = null;
+    panelWindow.hide();
   }
 });
 
@@ -377,5 +380,8 @@ ipcMain.on('resume-jump', () => startJumpInterval());
 
 ipcMain.on('quit-app', () => {
   stopJumpInterval();
+  if (panelWindow && !panelWindow.isDestroyed()) {
+    panelWindow.destroy();
+  }
   app.quit();
 });
