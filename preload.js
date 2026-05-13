@@ -8,7 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
   getScreenSize: () => ipcRenderer.invoke('get-screen-size'),
   getPlatform: () => process.platform,
-  isPanelVisible: () => ipcRenderer.invoke('is-panel-visible'),
   getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
   dragStart: () => ipcRenderer.send('drag-start'),
   dragBall: (pos) => ipcRenderer.send('drag-ball', pos),
@@ -20,5 +19,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pauseJump: () => ipcRenderer.send('pause-jump'),
   resumeJump: () => ipcRenderer.send('resume-jump'),
   onJumpScale: (callback) => ipcRenderer.on('jump-scale', (event, data) => callback(data)),
+  onRefreshSnippets: (callback) => ipcRenderer.on('refresh-snippets', () => callback()),
   quitApp: () => ipcRenderer.send('quit-app')
 });
