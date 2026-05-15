@@ -14,10 +14,11 @@
       justify-content: center;
     }
     .floating-ball {
-      width: 50px;
-      height: 50px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       cursor: pointer;
+      touch-action: none;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -40,7 +41,7 @@
       pointer-events: none;
       z-index: 2;
     }
-    .floating-ball:hover { 
+    .floating-ball:hover {
       transform: scale(1.1);
       box-shadow:
         0 4px 8px rgba(0, 0, 0, 0.1),
@@ -81,10 +82,15 @@
     const ball = document.getElementById('floatingBall');
     const ballImage = document.getElementById('ballImage');
     let isDragging = false;
+    let isDragReady = false;
     let hasMoved = false;
-    // ✅ 记录鼠标上一帧位置用于增量计算
-    let mouseStartX = 0;
-    let mouseStartY = 0;
+    let startScreenX = 0;
+    let startScreenY = 0;
+    let offsetX = 0;
+    let offsetY = 0;
+    let rafId = null;
+    let pendingX = null;
+    let pendingY = null;
 
     ballImage.onerror = function() {
       ball.classList.add('floating-ball--fallback');
@@ -95,54 +101,77 @@
       ball.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
     });
 
-    ball.addEventListener('click', (e) => {
-      if (!hasMoved) {
-        window.electronAPI.togglePanel();
-      }
-    });
-
-    ball.addEventListener('mousedown', (e) => {
+    ball.addEventListener('pointerdown', async (e) => {
       if (e.button !== 0) return;
-      e.preventDefault();
+      // 捕获指针：即使鼠标移出小窗口，pointermove/pointerup 事件仍持续触发
+      ball.setPointerCapture(e.pointerId);
 
       isDragging = true;
+      isDragReady = false;
       hasMoved = false;
+      startScreenX = e.screenX;
+      startScreenY = e.screenY;
 
-      // ✅ 通知主进程记录窗口位置作为增量基准
-      window.electronAPI.dragStart();
-
-      // ✅ 记录鼠标当前位置作为增量计算的起点
-      mouseStartX = e.screenX;
-      mouseStartY = e.screenY;
+      // invoke 等待主进程返回窗口位置，确保偏移量就绪后再处理 pointermove
+      const pos = await window.electronAPI.dragStart();
+      offsetX = e.screenX - pos.x;
+      offsetY = e.screenY - pos.y;
+      isDragReady = true;
 
       window.electronAPI.pauseJump();
     });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
+    ball.addEventListener('pointermove', (e) => {
+      if (!isDragging || !isDragReady) return;
 
-      // ✅ 计算相对上一帧的移动增量（非绝对偏移）
-      const deltaX = e.screenX - mouseStartX;
-      const deltaY = e.screenY - mouseStartY;
-
-      if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+      const dx = e.screenX - startScreenX;
+      const dy = e.screenY - startScreenY;
+      if (!hasMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
         hasMoved = true;
+      }
 
-        // ✅ 只传增量，主进程累加到当前位置
-        window.electronAPI.dragBall({ deltaX, deltaY });
+      // 屏幕绝对坐标直接计算目标位置 + rAF 节流
+      pendingX = e.screenX - offsetX;
+      pendingY = e.screenY - offsetY;
 
-        // ✅ 更新参考点，下次 mousemove 基于本次位置计算增量
-        mouseStartX = e.screenX;
-        mouseStartY = e.screenY;
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          if (pendingX !== null) {
+            window.electronAPI.dragBall({ x: pendingX, y: pendingY });
+            pendingX = null;
+            pendingY = null;
+          }
+        });
       }
     });
 
-    document.addEventListener('mouseup', () => {
+    ball.addEventListener('pointerup', () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       if (isDragging) {
         if (hasMoved) {
           window.electronAPI.saveBallPosition();
+        } else {
+          window.electronAPI.togglePanel();
         }
         isDragging = false;
+        isDragReady = false;
+        window.electronAPI.resumeJump();
+      }
+    });
+
+    // 安全网：指针捕获意外丢失时清理状态
+    ball.addEventListener('lostpointercapture', () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      if (isDragging) {
+        isDragging = false;
+        isDragReady = false;
         window.electronAPI.resumeJump();
       }
     });

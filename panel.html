@@ -80,7 +80,7 @@
       transform: translateY(-50%);
       font-size: 14px;
     }
-    .snippet-list { flex: 1; overflow-y: auto; }
+    .snippet-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px;}
     .snippet-list::-webkit-scrollbar { width: 4px; }
     .snippet-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
     .snippet-item {
@@ -237,7 +237,7 @@
       <div class="header-actions">
         <button class="btn-icon" id="btnAdd" title="添加">+</button>
         <button class="btn-icon btn-quit" id="btnQuit" title="退出应用">⏻</button>
-        <button class="btn-icon btn-close" id="btnClose" title="关闭面板">×</button>
+        <button class="btn-icon btn-close" id="btnClose" title="收起面板">-</button>
       </div>
     </div>
     <div class="search-box">
@@ -355,14 +355,16 @@
     function setupEvents() {
       // 面板拖拽
       let isDragging = false;
+      let hasMoved = false;
       let dragStartX = 0, dragStartY = 0;
 
       panelHeader.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || e.target.tagName === 'BUTTON') return;
         isDragging = true;
+        hasMoved = false;
         dragStartX = e.screenX;
         dragStartY = e.screenY;
-        // ✅ 通知主进程记录窗口位置作为增量基准，避免 getPosition() 异步滞后漂移
+        document.body.style.pointerEvents = 'none';
         window.electronAPI.dragPanelStart();
       });
 
@@ -370,12 +372,21 @@
         if (!isDragging) return;
         const deltaX = e.screenX - dragStartX;
         const deltaY = e.screenY - dragStartY;
+        if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+          hasMoved = true;
+        }
         window.electronAPI.dragPanel({ deltaX, deltaY });
         dragStartX = e.screenX;
         dragStartY = e.screenY;
       });
 
       document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          document.body.style.pointerEvents = '';
+          if (hasMoved) {
+            window.electronAPI.savePanelPosition();
+          }
+        }
         isDragging = false;
       });
 

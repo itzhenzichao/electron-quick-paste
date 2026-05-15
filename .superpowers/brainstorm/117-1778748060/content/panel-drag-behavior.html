@@ -1,0 +1,61 @@
+<h2>面板拖拽行为：限位 + 吸附 + 回弹</h2>
+<p class="subtitle">三种机制的触发时机和优先级</p>
+
+<div class="section">
+  <h3>拖拽中（mousemove）</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:16px;">
+      <p style="color:#e0e0e0;line-height:1.8;">窗口实时跟随鼠标，但在拖拽过程中应用 <strong>软限位</strong>：允许短暂越界（不超过 50px），给用户拖拽到副屏的过渡空间。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>松手后（mouseup）— 按优先级执行</h3>
+  <table style="width:100%;border-collapse:collapse;color:#e0e0e0;font-size:13px;">
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+      <th style="padding:10px;text-align:left;width:10%">优先级</th>
+      <th style="padding:10px;text-align:left;width:20%">机制</th>
+      <th style="padding:10px;text-align:left;width:35%">触发条件</th>
+      <th style="padding:10px;text-align:left;width:35%">行为</th>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+      <td style="padding:10px;text-align:center;">1</td>
+      <td style="padding:10px;"><strong>边界限位</strong></td>
+      <td style="padding:10px;">窗口任一边缘超出屏幕可视区域</td>
+      <td style="padding:10px;">Clamp 到屏幕边界内，四边都不超出。底部避开任务栏</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+      <td style="padding:10px;text-align:center;">2</td>
+      <td style="padding:10px;"><strong>边缘吸附</strong></td>
+      <td style="padding:10px;">窗口边缘距屏幕任意边界 ≤ 10px</td>
+      <td style="padding:10px;">吸附贴紧屏幕边缘，完整显示不裁切</td>
+    </tr>
+    <tr>
+      <td style="padding:10px;text-align:center;">3</td>
+      <td style="padding:10px;"><strong>溢出回弹</strong></td>
+      <td style="padding:10px;">松手时窗口有任意部分在屏幕外</td>
+      <td style="padding:10px;">弹性动画回弹至屏幕内合法位置</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h3>回弹动画</h3>
+  <div class="options">
+    <div class="option" data-choice="spring" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>弹簧动画（推荐）</h3>
+        <p>ease-out 曲线，约 250ms。视觉上有"弹回"的感觉</p>
+      </div>
+    </div>
+    <div class="option" data-choice="instant" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>瞬切</h3>
+        <p>松手即刻跳到合法位置，无过渡。简单但不流畅</p>
+      </div>
+    </div>
+  </div>
+</div>
