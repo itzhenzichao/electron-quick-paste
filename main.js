@@ -221,7 +221,8 @@ function createBallWindow() {
   });
 
   ballWindow.loadFile(path.join(basePath, 'ball.html'));
-  
+  if (!app.isPackaged) ballWindow.webContents.openDevTools({ mode: 'detach' });
+
   ballWindow.on('closed', () => {
     ballWindow = null;
     if (jumpInterval) {
@@ -370,6 +371,7 @@ function createPanelWindow() {
   });
 
   panelWindow.loadFile(path.join(basePath, 'panel.html'));
+  if (!app.isPackaged) panelWindow.webContents.openDevTools({ mode: 'detach' });
 
   panelWindow.on('closed', () => {
     panelWindow = null;
