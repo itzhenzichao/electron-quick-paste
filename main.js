@@ -39,8 +39,9 @@ let dragPanelH = 0;
 let springAnimId = null;
 let ballReboundAnimId = null;
 let trayMenuWin = null;
+let repositionDebounceId = null;
 
-const BALL_SIZE = 44;
+const BALL_SIZE = 54;
 
 function createTray() {
   const iconPath = path.join(getBasePath(), 'build', 'icon.png');
@@ -143,6 +144,16 @@ function findNearestDisplay(x, y) {
 }
 
 function repositionAll() {
+  if (repositionDebounceId) {
+    clearTimeout(repositionDebounceId);
+  }
+  repositionDebounceId = setTimeout(() => {
+    repositionDebounceId = null;
+    doRepositionAll();
+  }, 200);
+}
+
+function doRepositionAll() {
   const displays = screen.getAllDisplays();
   if (ballWindow && !ballWindow.isDestroyed()) {
     const [bx, by] = ballWindow.getPosition();
@@ -378,6 +389,15 @@ function createPanelWindow() {
   });
 }
 
+// Windows 高 DPI 启动修复：锁定缩放因子，避免 display-metrics-changed 反复触发导致窗口闪烁
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('force-device-scale-factor', '1');
+}
+
+// 禁用 GPU 加速：避免打包后 DPI 初始化期间的渲染异常
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+
 app.whenReady().then(() => {
   if (process.platform === 'darwin') {
     app.dock.hide();
@@ -385,9 +405,9 @@ app.whenReady().then(() => {
   createTray();
   createBallWindow();
 
-  screen.on('display-added', repositionAll);
-  screen.on('display-removed', repositionAll);
-  screen.on('display-metrics-changed', repositionAll);
+  screen.on('display-added', () => repositionAll());
+  screen.on('display-removed', () => repositionAll());
+  screen.on('display-metrics-changed', () => repositionAll());
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
