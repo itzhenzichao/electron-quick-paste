@@ -1,5 +1,6 @@
 {
   "name": "electron-quick-paste",
+  "productName": "粘亿驼",
   "version": "1.1.1",
   "description": "快捷粘贴工具",
   "main": "dist/main.min.js",
