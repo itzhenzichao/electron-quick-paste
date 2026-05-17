@@ -44,12 +44,21 @@ let repositionDebounceId = null;
 const BALL_SIZE = 54;
 
 function createTray() {
-  const iconPath = path.join(getBasePath(), 'build', 'icon.png');
-  if (!fs.existsSync(iconPath)) return;
+  const basePath = getBasePath();
+  // macOS: prefer template-ready tray icon; Windows: use main icon
+  const trayIconPath = process.platform === 'darwin'
+    ? path.join(basePath, 'build', 'tray-icon.png')
+    : path.join(basePath, 'build', 'icon.png');
+  if (!fs.existsSync(trayIconPath)) return;
 
-  const trayIcon = nativeImage.createFromPath(iconPath).resize(
-    process.platform === 'darwin' ? { width: 22, height: 22 } : { width: 16, height: 16 }
-  );
+  let trayIcon = nativeImage.createFromPath(trayIconPath);
+
+  if (process.platform === 'darwin') {
+    trayIcon = trayIcon.resize({ width: 22, height: 22 });
+    trayIcon.setTemplateImage(true);
+  } else {
+    trayIcon = trayIcon.resize({ width: 16, height: 16 });
+  }
   tray = new Tray(trayIcon);
   tray.setToolTip('粘亿驼');
 

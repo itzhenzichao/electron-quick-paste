@@ -50,7 +50,7 @@ async function copyAssets() {
     fs.mkdirSync(distBuildDir, { recursive: true });
   }
   
-  const buildFiles = ['icon.png', 'icon.ico', 'icon.icns'];
+  const buildFiles = ['icon.png', 'icon.ico', 'icon.icns', 'tray-icon.png'];
   buildFiles.forEach(file => {
     const srcFile = path.join('build', file);
     const destFile = path.join(distBuildDir, file);
