@@ -1,7 +1,7 @@
 {
   "name": "electron-quick-paste",
-  "productName": "粘亿驼",
-  "version": "1.1.1",
+  "productName": "NianYiTuo",
+  "version": "1.2.0",
   "description": "快捷粘贴工具",
   "main": "dist/main.min.js",
   "scripts": {
@@ -17,29 +17,7 @@
   "devDependencies": {
     "electron": "^27.0.0",
     "electron-builder": "^24.9.1",
-    "esbuild": "^0.19.12"
-  },
-  "build": {
-    "appId": "com.zzc.electron-quick-paste",
-    "icon": "build/icon.png",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "build/icon.png",
-      "build/tray-icon.png"
-    ],
-    "mac": {
-      "icon": "build/icon.png",
-      "target": ["dmg"]
-    },
-    "win": {
-      "icon": "build/icon.png",
-      "target": ["nsis"]
-    }
-  },
-  "dependencies": {
+    "esbuild": "^0.19.12",
     "electron-store": "^8.1.0"
   }
 }

@@ -2,6 +2,20 @@ const esbuild = require('esbuild');
 const fs = require('fs');
 const path = require('path');
 
+async function cleanDist() {
+  console.log('🧹 清理 dist 目录...');
+  const keep = ['main.min.js', 'preload.min.js', 'ball.html', 'panel.html', 'build'];
+  if (fs.existsSync('dist')) {
+    fs.readdirSync('dist').forEach(f => {
+      if (!keep.includes(f)) {
+        const p = path.join('dist', f);
+        fs.rmSync(p, { recursive: true, force: true });
+        console.log(`  ✗ 删除 dist/${f}`);
+      }
+    });
+  }
+}
+
 async function buildJS() {
   console.log('📦 开始编译 JavaScript...');
 
@@ -28,7 +42,7 @@ async function buildJS() {
     platform: 'node',
     bundle: true,
     treeShaking: true,
-    external: ['electron', 'electron-store'],
+    external: ['electron'],
     legalComments: 'none'
   });
   console.log('  ✓ dist/main.min.js');
@@ -76,6 +90,7 @@ async function main() {
   console.log('🚀 开始资源构建...\n');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+  await cleanDist();
   await buildJS();
   await copyAssets();
 

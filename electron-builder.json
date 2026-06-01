@@ -1,6 +1,6 @@
 {
   "appId": "com.quickpaste.app",
-  "productName": "粘亿驼",
+  "productName": "NianYiTuo",
   "directories": {
     "output": "release"
   },
@@ -11,7 +11,8 @@
     "dist/ball.html",
     "dist/panel.html",
     "dist/build/**/*",
-    "package.json"
+    "package.json",
+    "!**/locales/!(zh-CN|en-US)*.pak"
   ],
   "extraMetadata": {
     "main": "dist/main.min.js"
@@ -25,7 +26,7 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "build/icon.ico"
+    "icon": "build/icon.png"
   },
   "mac": {
     "target": [
@@ -38,7 +39,7 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "build/icon.icns",
+    "icon": "build/icon.png",
     "category": "public.app-category.productivity",
     "extendInfo": {
       "LSUIElement": 1
@@ -54,11 +55,9 @@
     "artifactName": "${productName}-${version}-${arch}.exe"
   },
   "dmg": {
-    "window": { "width": 256, "height": 256 },
-    "iconSize": 64,
     "contents": [
-      { "x": 65, "y": 128 },
-      { "x": 190, "y": 128, "type": "link", "path": "/Applications" }
+      { "x": 130, "y": 220 },
+      { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
     ]
   }
 }

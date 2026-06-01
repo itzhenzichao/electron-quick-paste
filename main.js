@@ -60,7 +60,7 @@ function createTray() {
     trayIcon = trayIcon.resize({ width: 16, height: 16 });
   }
   tray = new Tray(trayIcon);
-  tray.setToolTip('粘亿驼');
+  tray.setToolTip('NianYiTuo');
 
   if (process.platform === 'darwin') {
     const contextMenu = Menu.buildFromTemplate([
