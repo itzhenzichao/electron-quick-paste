@@ -2,6 +2,12 @@
 
 一个轻量级的桌面快捷粘贴工具，通过悬浮球快速访问常用文本片段。
 
+## 预览
+
+| macOS | Windows |
+|:---:|:---:|
+| ![macOS](build/history/mac.jpg) | ![Windows](build/history/win.jpg) |
+
 ## 功能特性
 
 - ✅ 桌面悬浮球，可自由拖动（无留白）
