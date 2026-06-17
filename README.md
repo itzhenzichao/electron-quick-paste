@@ -143,6 +143,12 @@ npm run build
    - Windows: `%APPDATA%/electron-quick-paste/quick-paste-data.json`
    - macOS: `~/Library/Application Support/electron-quick-paste/quick-paste-data.json`
 
+## 遇到的难题
+### Electron 无边框窗口在高 DPI 下的稳定拖拽
+在 Windows 的高 DPI 环境（例如 125% / 150% 缩放）和高刷新率鼠标条件下，如果改用 JavaScript 通知主进程实现拖拽，很容易出现拖拽抖动、窗口尺寸异常变化、快速移动时拖拽中断等问题。
+参考文章： [知乎作者-w0fv1.dev](https://zhuanlan.zhihu.com/p/1980462518976680377)
+
+
 ## 许可证
 
 MIT License
