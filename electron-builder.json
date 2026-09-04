@@ -6,23 +6,22 @@
   },
   "compression": "maximum",
   "files": [
-    "dist/main.min.js",
-    "dist/preload.min.js",
-    "dist/ball.html",
-    "dist/panel.html",
-    "dist/build/**/*",
+    "out/main/index.js",
+    "out/preload/**/*",
+    "out/renderer/**/*",
+    "build/**/*",
     "package.json",
     "!**/locales/!(zh-CN|en-US)*.pak"
   ],
   "extraMetadata": {
-    "main": "dist/main.min.js"
+    "main": "out/main/index.js"
   },
   "asar": true,
   "asarUnpack": [],
   "win": {
     "target": [
       {
-        "target": "portable",
+        "target": "nsis",
         "arch": ["x64"]
       }
     ],
@@ -47,12 +46,15 @@
   },
   "nsis": {
     "oneClick": false,
+    "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": false,
-    "createStartMenuShortcut": false
-  },
-  "portable": {
-    "artifactName": "${productName}-${version}-${arch}.exe"
+    "language": "2052",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "NianYiTuo",
+    "uninstallDisplayName": "NianYiTuo",
+    "runAfterFinish": true,
+    "include": "build/installer.nsh"
   },
   "dmg": {
     "contents": [

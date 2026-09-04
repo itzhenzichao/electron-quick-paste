@@ -1,0 +1,205 @@
+<template>
+  <div
+    class="floating-ball"
+    :class="{ 'floating-ball--fallback': fallback }"
+    ref="ballRef"
+    @pointerdown="onPointerDown"
+    @pointermove="onPointerMove"
+    @pointerup="onPointerUp"
+    @lostpointercapture="onLostCapture"
+  >
+    <img
+      class="ball-image"
+      :src="iconUrl"
+      alt="icon"
+      @error="onImgError"
+    >
+    <svg class="fallback-icon" viewBox="0 0 24 24">
+      <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+    </svg>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import iconUrl from '../../../build/icon.png'
+
+const ballRef = ref<HTMLDivElement | null>(null)
+const fallback = ref(false)
+
+let isDragging = false
+let isDragReady = false
+let hasMoved = false
+let startScreenX = 0
+let startScreenY = 0
+let offsetX = 0
+let offsetY = 0
+let rafId: number | null = null
+let pendingX: number | null = null
+let pendingY: number | null = null
+
+function onImgError() {
+  fallback.value = true
+}
+
+function onPointerDown(e: PointerEvent) {
+  if (e.button !== 0) return
+  const ball = ballRef.value
+  if (!ball) return
+  ball.setPointerCapture(e.pointerId)
+
+  isDragging = true
+  isDragReady = false
+  hasMoved = false
+  startScreenX = e.screenX
+  startScreenY = e.screenY
+
+  void window.electronAPI.dragStart().then(pos => {
+    offsetX = e.screenX - pos.x
+    offsetY = e.screenY - pos.y
+    isDragReady = true
+  })
+
+  window.electronAPI.pauseJump()
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (!isDragging || !isDragReady) return
+
+  const dx = e.screenX - startScreenX
+  const dy = e.screenY - startScreenY
+  if (!hasMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+    hasMoved = true
+  }
+
+  pendingX = e.screenX - offsetX
+  pendingY = e.screenY - offsetY
+
+  if (rafId === null) {
+    rafId = requestAnimationFrame(() => {
+      rafId = null
+      if (pendingX !== null) {
+        window.electronAPI.dragBall({ x: pendingX, y: pendingY })
+        pendingX = null
+        pendingY = null
+      }
+    })
+  }
+}
+
+function onPointerUp() {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  if (isDragging) {
+    if (hasMoved) {
+      window.electronAPI.saveBallPosition()
+    } else {
+      window.electronAPI.togglePanel()
+    }
+    isDragging = false
+    isDragReady = false
+    window.electronAPI.resumeJump()
+  }
+}
+
+function onLostCapture() {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  if (isDragging) {
+    isDragging = false
+    isDragReady = false
+    window.electronAPI.resumeJump()
+  }
+}
+
+onMounted(() => {
+  window.electronAPI.onJumpScale(data => {
+    const ball = ballRef.value
+    if (ball) {
+      ball.style.transform = `scaleX(${data.scaleX}) scaleY(${data.scaleY})`
+    }
+  })
+})
+</script>
+
+<style scoped>
+.floating-ball {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center center;
+  background: #ffffff;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.floating-ball::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  right: 6px;
+  height: 35%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.floating-ball:hover {
+  transform: scale(1.1);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    0 8px 20px rgba(0, 0, 0, 0.14),
+    0 16px 36px rgba(0, 0, 0, 0.16);
+}
+
+.floating-ball:active {
+  transform: scale(0.95);
+}
+
+.ball-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
+.floating-ball--fallback {
+  background: #ffffff;
+}
+
+.floating-ball--fallback .ball-image {
+  display: none;
+}
+
+.fallback-icon {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  fill: #667eea;
+  z-index: 1;
+  pointer-events: none;
+  display: none;
+}
+
+.floating-ball--fallback .fallback-icon {
+  display: block;
+}
+</style>

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getSnippets: () => ipcRenderer.invoke('get-snippets'),
@@ -6,8 +6,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateSnippet: (snippet) => ipcRenderer.invoke('update-snippet', snippet),
   deleteSnippet: (id) => ipcRenderer.invoke('delete-snippet', id),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
-  getScreenSize: () => ipcRenderer.invoke('get-screen-size'),
+  getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
+  setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),
   getPlatform: () => process.platform,
+  getScreenSize: () => ipcRenderer.invoke('get-screen-size'),
   getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
   dragStart: () => ipcRenderer.invoke('drag-start'),
   dragBall: (pos) => ipcRenderer.send('drag-ball', pos),
@@ -17,9 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   savePanelPosition: () => ipcRenderer.send('save-panel-position'),
   togglePanel: () => ipcRenderer.send('toggle-panel'),
   closePanel: () => ipcRenderer.send('close-panel'),
-  pauseJump: () => ipcRenderer.send('pause-jump'),
-  resumeJump: () => ipcRenderer.send('resume-jump'),
-  onJumpScale: (callback) => ipcRenderer.on('jump-scale', (event, data) => callback(data)),
-  onRefreshSnippets: (callback) => ipcRenderer.on('refresh-snippets', () => callback()),
-  quitApp: () => ipcRenderer.send('quit-app')
-});
+  openSettings: () => ipcRenderer.send('open-settings'),
+  quitApp: () => ipcRenderer.send('quit-app'),
+  onJumpScale: (callback) => ipcRenderer.on('jump-scale', (_e, data) => callback(data)),
+  onRefreshSnippets: (callback) => ipcRenderer.on('refresh-snippets', () => callback())
+})
