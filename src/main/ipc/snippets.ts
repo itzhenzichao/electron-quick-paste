@@ -32,6 +32,18 @@ export function registerSnippetsIpc() {
     return snippets
   })
 
+  ipcMain.handle('reorder-snippets', (_e, ids: number[]) => {
+    const store = getStore()
+    const snippets = store.get('snippets')
+    const map = new Map(snippets.map(s => [s.id, s]))
+    const reordered = ids.map(id => map.get(id)).filter((s): s is (typeof snippets)[number] => s !== undefined)
+    if (reordered.length === snippets.length) {
+      store.set('snippets', reordered)
+      return reordered
+    }
+    return snippets
+  })
+
   ipcMain.handle('copy-to-clipboard', (_e, text) => {
     clipboard.writeText(text)
     return true

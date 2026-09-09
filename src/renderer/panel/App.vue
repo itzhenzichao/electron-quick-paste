@@ -13,7 +13,7 @@
       <span class="search-icon">🔍</span>
       <input type="text" class="search-input" v-model="keyword" placeholder="搜索内容...">
     </div>
-    <div class="snippet-list">
+    <div class="snippet-list" ref="snippetListRef">
       <div v-if="filteredSnippets.length === 0" class="empty-state">
         <template v-if="keyword.trim() === ''">
           <div>暂无快捷文本</div>
@@ -69,7 +69,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import Sortable from 'sortablejs'
 import { useSnippetsStore } from './stores/snippets'
 import type { Snippet } from '../../../preload'
 
@@ -157,6 +158,27 @@ function onCloseClick() {
   window.electronAPI.closePanel()
 }
 
+const snippetListRef = ref<HTMLElement | null>(null)
+let sortableInstance: Sortable | null = null
+
+function onSnippetDragEnd(evt: Sortable.SortableEvent) {
+  const { oldIndex, newIndex, item, from } = evt
+  if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+  // 撤销 sortable 对 DOM 的直接移动，交还给 Vue 根据数据重排，避免两者抢 DOM 所有权
+  from.removeChild(item)
+  from.insertBefore(item, from.children[oldIndex] ?? null)
+
+  const arr = [...store.list]
+  const [moved] = arr.splice(oldIndex, 1)
+  if (!moved) return
+  arr.splice(newIndex, 0, moved)
+  store.reorder(arr.map(s => s.id))
+}
+
+watch(keyword, v => {
+  sortableInstance?.option('disabled', v.trim() !== '')
+})
+
 let isDragging = false
 let hasMoved = false
 let dragStartX = 0
@@ -210,6 +232,23 @@ onMounted(() => {
   store.load()
   window.electronAPI.onRefreshSnippets(() => store.load())
   document.addEventListener('keydown', onKeydown)
+
+  if (snippetListRef.value) {
+    sortableInstance = Sortable.create(snippetListRef.value, {
+      animation: 150,
+      draggable: '.snippet-item',
+      delay: 150,
+      delayOnTouchOnly: true,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: onSnippetDragEnd
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  sortableInstance?.destroy()
+  sortableInstance = null
 })
 </script>
 
@@ -352,6 +391,13 @@ onMounted(() => {
 }
 .btn-action.edit:hover { background: rgba(255, 193, 7, 0.3); }
 .btn-action.delete:hover { background: rgba(244, 67, 54, 0.3); }
+
+.snippet-item.sortable-chosen { transition: none; }
+.snippet-item.sortable-ghost {
+  opacity: 0.35;
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px dashed rgba(102, 126, 234, 0.5);
+}
 
 .modal-overlay {
   position: fixed;

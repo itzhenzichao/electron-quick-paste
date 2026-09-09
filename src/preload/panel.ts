@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addSnippet: (snippet) => ipcRenderer.invoke('add-snippet', snippet),
   updateSnippet: (snippet) => ipcRenderer.invoke('update-snippet', snippet),
   deleteSnippet: (id) => ipcRenderer.invoke('delete-snippet', id),
+  reorderSnippets: (ids) => ipcRenderer.invoke('reorder-snippets', ids),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
   getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
   setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),

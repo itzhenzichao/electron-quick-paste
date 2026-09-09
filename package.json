@@ -1,7 +1,7 @@
 {
   "name": "electron-quick-paste",
   "productName": "NianYiTuo",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "快捷粘贴工具",
   "main": "out/main/index.js",
   "scripts": {
@@ -23,11 +23,13 @@
     "electron-store": "^8.1.0",
     "naive-ui": "^2.40.0",
     "pinia": "^2.2.0",
+    "sortablejs": "^1.15.7",
     "vue": "^3.5.0",
     "vue-router": "^4.4.0"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
+    "@types/sortablejs": "^1.15.9",
     "@vitejs/plugin-vue": "^6.0.8",
     "electron": "^27.0.0",
     "electron-builder": "^24.9.1",

@@ -44,6 +44,7 @@ export interface ElectronAPI {
   addSnippet: (snippet: { content: string }) => Promise<Snippet[]>
   updateSnippet: (snippet: Snippet) => Promise<Snippet[]>
   deleteSnippet: (id: number) => Promise<Snippet[]>
+  reorderSnippets: (ids: number[]) => Promise<Snippet[]>
   copyToClipboard: (text: string) => Promise<boolean>
   getAutoLaunch: () => Promise<AutoLaunchResult>
   setAutoLaunch: (enabled: boolean) => Promise<AutoLaunchResult>

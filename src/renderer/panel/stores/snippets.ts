@@ -21,5 +21,9 @@ export const useSnippetsStore = defineStore('snippets', () => {
     list.value = await window.electronAPI.deleteSnippet(id)
   }
 
-  return { list, load, add, update, remove }
+  async function reorder(ids: number[]) {
+    list.value = await window.electronAPI.reorderSnippets(ids)
+  }
+
+  return { list, load, add, update, remove, reorder }
 })
