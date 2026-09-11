@@ -1,7 +1,7 @@
 {
   "name": "electron-quick-paste",
   "productName": "NianYiTuo",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "快捷粘贴工具",
   "main": "out/main/index.js",
   "scripts": {
