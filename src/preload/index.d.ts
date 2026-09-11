@@ -63,6 +63,7 @@ export interface ElectronAPI {
   closePanel: () => void
   openSettings: () => void
   closeSettings: () => void
+  getAppVersion: () => Promise<string>
   pauseJump: () => void
   resumeJump: () => void
   quitApp: () => void

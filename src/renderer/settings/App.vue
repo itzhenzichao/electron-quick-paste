@@ -36,7 +36,8 @@ const route = useRoute()
 
 const menuItems = [
   { path: '/auto-launch', icon: '⚙', label: '开机启动' },
-  { path: '/data', icon: '⇄', label: '数据管理' }
+  { path: '/data', icon: '⇄', label: '数据管理' },
+  { path: '/version', icon: 'ℹ', label: '版本信息' }
 ]
 
 const currentPath = computed(() => route.path)
