@@ -5,11 +5,13 @@
     "output": "release"
   },
   "compression": "maximum",
+  "electronLanguages": ["zh-CN", "en-US"],
   "files": [
     "out/main/index.js",
     "out/preload/**/*",
     "out/renderer/**/*",
     "build/**/*",
+    "!build/history/**",
     "package.json",
     "!**/locales/!(zh-CN|en-US)*.pak"
   ],
