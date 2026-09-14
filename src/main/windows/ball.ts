@@ -83,8 +83,6 @@ export function createBallWindow(): BrowserWindow {
       clearInterval(jumpInterval)
       jumpInterval = null
     }
-    const panel = require('./panel').getPanelWindow()
-    if (panel && !panel.isDestroyed()) panel.destroy()
   })
 
   if (process.platform === 'darwin') {

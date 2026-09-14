@@ -46,6 +46,11 @@ if (!gotTheLock) {
     registerIpcHandlers()
     createTray()
     createBallWindow()
+    // ball 关闭时连带关闭 panel（原逻辑在 ball.ts 内用 require 反向引用 panel，打包后会崩）
+    getBallWindow()?.on('closed', () => {
+      const panel = getPanelWindow()
+      if (panel && !panel.isDestroyed()) panel.destroy()
+    })
 
     screen.on('display-added', () => repositionAll())
     screen.on('display-removed', () => repositionAll())
