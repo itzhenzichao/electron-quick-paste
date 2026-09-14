@@ -48,7 +48,7 @@ export function createSettingsWindow(): BrowserWindow {
     settingsWindow.loadFile(path.join(__dirname, '../renderer/settings/index.html'))
   }
 
-  if (!app.isPackaged) settingsWindow.webContents.openDevTools({ mode: 'detach' })
+  // if (!app.isPackaged) settingsWindow.webContents.openDevTools({ mode: 'detach' })
 
   settingsWindow.on('closed', () => {
     settingsWindow = null

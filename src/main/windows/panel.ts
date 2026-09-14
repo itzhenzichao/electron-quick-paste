@@ -79,7 +79,7 @@ export function createPanelWindow(): BrowserWindow {
     panelWindow.loadFile(path.join(__dirname, '../renderer/panel/index.html'))
   }
 
-  if (!app.isPackaged) panelWindow.webContents.openDevTools({ mode: 'detach' })
+  // if (!app.isPackaged) panelWindow.webContents.openDevTools({ mode: 'detach' })
 
   panelWindow.on('closed', () => {
     panelWindow = null

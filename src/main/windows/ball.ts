@@ -75,7 +75,7 @@ export function createBallWindow(): BrowserWindow {
     ballWindow.loadFile(path.join(__dirname, '../renderer/ball/index.html'))
   }
 
-  if (!app.isPackaged) ballWindow.webContents.openDevTools({ mode: 'detach' })
+  // if (!app.isPackaged) ballWindow.webContents.openDevTools({ mode: 'detach' })
 
   ballWindow.on('closed', () => {
     ballWindow = null
